@@ -327,7 +327,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Width: 100
   Height: 100
-  InitialMapFillPercent: 50
+  InitialMapFillPercent: 46
   Seed: 
   UseRandomSeed: 0
   BorderSize: 1
