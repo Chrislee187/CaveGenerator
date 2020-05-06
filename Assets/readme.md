@@ -2,4 +2,4 @@
 
 ![alt text][samplev1]
 
-[samplev1]: https://github.com/chrislee187/CaveGenerator/blob/master/DocImages/samplev1.png "Output after the initial random generation and smoothing pass"
+[samplev1]: https://github.com/Chrislee187/CaveGenerator/blob/master/DocImages/samplev1.JPG "Output after the initial random generation and smoothing pass"
