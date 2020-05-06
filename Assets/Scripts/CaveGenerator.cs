@@ -22,8 +22,11 @@ public class CaveGenerator : MonoBehaviour
     [Min(0)]
     public int BorderSize = 1;
 
-    private int[,] _map;
+    [Range(0,25)]
+    public int SmoothingIterations = 5;
 
+
+    private int[,] _map;
     private string _lastSeed = "";
 
     void Start()
@@ -53,8 +56,8 @@ public class CaveGenerator : MonoBehaviour
         var floorPlanGenerator = new CaveFloorPlanGenerator(Width, Height);
 
         _map = UseRandomSeed
-            ? floorPlanGenerator.GenerateRandom(InitialMapFillPercent, BorderSize)
-            : floorPlanGenerator.Generate(Seed, InitialMapFillPercent, BorderSize);
+            ? floorPlanGenerator.GenerateRandom(InitialMapFillPercent, BorderSize, SmoothingIterations)
+            : floorPlanGenerator.Generate(Seed, InitialMapFillPercent, BorderSize, SmoothingIterations);
 
         Seed = floorPlanGenerator.Seed;
         _lastSeed = Seed;

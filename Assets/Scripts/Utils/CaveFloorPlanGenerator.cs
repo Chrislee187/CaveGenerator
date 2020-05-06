@@ -19,7 +19,7 @@ public class CaveFloorPlanGenerator
         _width = width;
         _height = height;
     }
-
+    
     public int[,] GenerateRandom(int randomFillPercent = 50, int borderSize = 1, int smoothingIterations = 5)
         => Generate(Guid.NewGuid().ToString(),
             randomFillPercent,
@@ -35,12 +35,14 @@ public class CaveFloorPlanGenerator
         var map = new int[_width, _height];
 
         RandomiseMap(map, Seed, randomFillPercent);
-        
-        for (var i = 0; i < smoothingIterations; i++)
-        {
-            ApplySmoothing(map);
-        }
 
+        if (smoothingIterations > 0)
+        {
+            for (var i = 0; i < smoothingIterations; i++)
+            {
+                ApplySmoothing(map);
+            }
+        }
         return map;
 
     }
@@ -69,11 +71,12 @@ public class CaveFloorPlanGenerator
         });
     }
 
+
     void ApplySmoothing(int[,] map)
     {
         For.Xy(_width, _height, (x, y) =>
         {
-            var neighbourWalls = GetSurroundWallsCount(x, y, map);
+            var neighbourWalls = NineNeighbourWallCount(x, y, map);
             if (neighbourWalls > 4)
             {
                 map[x, y] = AWall;
@@ -85,13 +88,15 @@ public class CaveFloorPlanGenerator
         });
     }
 
-    int GetSurroundWallsCount(int wallX, int wallY, int[,] map)
+    /// <summary>
+    /// Get the eight adjacent cells (known as the <see href="https://en.wikipedia.org/wiki/Moore_neighborhood">"Moore neighbourhood"</see> or "nine-neighbour-square")
+    /// </summary>
+    /// <param name="wallX"></param>
+    /// <param name="wallY"></param>
+    /// <param name="map"></param>
+    /// <returns></returns>
+    int NineNeighbourWallCount(int wallX, int wallY, int[,] map)
     {
-        bool IsInGridBounds(int neighbourX, int neighbourY)
-        {
-            return neighbourX >= 0 && neighbourX < _width && neighbourY >= 0 && neighbourY < _height;
-        }
-
         var wallCount = 0;
 
         for (var neighbourX = wallX - 1; neighbourX <= wallX + 1; neighbourX++)
@@ -107,6 +112,7 @@ public class CaveFloorPlanGenerator
                 }
                 else
                 {
+                    // Our borders are solid so out of bounds cells are walls
                     wallCount++;
                 }
             }
@@ -114,4 +120,10 @@ public class CaveFloorPlanGenerator
 
         return wallCount;
     }
+    private bool IsInGridBounds(int neighbourX, int neighbourY)
+    {
+        return neighbourX >= 0 && neighbourX < _width && neighbourY >= 0 && neighbourY < _height;
+    }
+
+
 }
