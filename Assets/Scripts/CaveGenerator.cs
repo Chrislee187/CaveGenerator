@@ -22,20 +22,20 @@ public class CaveGenerator : MonoBehaviour
     [Min(0)]
     public int BorderSize = 1;
 
-    private CaveFloorPlanGenerator _floorPlanGenerator;
     private int[,] _map;
+
+    private string _lastSeed = "";
 
     void Start()
     {
         GenerateCave();
     }
 
-    private string lastSeed = "";
-    public void OnValidate()
+    void OnValidate()
     {
         if (GUI.changed)
         {
-            if (Seed == lastSeed && UseRandomSeed)
+            if (Seed == _lastSeed && UseRandomSeed)
             {
                 UseRandomSeed = false;
                 GenerateCave();
@@ -50,32 +50,27 @@ public class CaveGenerator : MonoBehaviour
 
     public void GenerateCave()
     {
-        _floorPlanGenerator = new CaveFloorPlanGenerator(Width, Height);
+        var floorPlanGenerator = new CaveFloorPlanGenerator(Width, Height);
 
-        if (UseRandomSeed)
-        {
-            _map = _floorPlanGenerator.GenerateRandom(InitialMapFillPercent, BorderSize);
-        }
-        else
-        {
-            _map = this._floorPlanGenerator.Generate(Seed, InitialMapFillPercent, BorderSize);
-        }
-        Seed = _floorPlanGenerator.Seed;
-        lastSeed = Seed;
+        _map = UseRandomSeed
+            ? floorPlanGenerator.GenerateRandom(InitialMapFillPercent, BorderSize)
+            : floorPlanGenerator.Generate(Seed, InitialMapFillPercent, BorderSize);
+
+        Seed = floorPlanGenerator.Seed;
+        _lastSeed = Seed;
     }
 
     void OnDrawGizmos()
     {
-        if(_map != null)
+        if (_map == null) return;
+
+        var xOffset = -Width / 2f + 0.5f;
+        var zOffset = -Height / 2f + 0.5f;
+        For.Xy(Width, Height, (x, y) =>
         {
-            var xOffset = -Width / 2f + 0.5f;
-            var zOffset = -Height / 2f + 0.5f;
-            For.Xy(Width, Height, (x, y) =>
-            {
-                Gizmos.color = _map[x, y] == 1 ? Color.blue : Color.white;
-                var pos = new Vector3(xOffset + x, 0, zOffset + y);
-                Gizmos.DrawCube(pos, Vector3.one);
-            });
-        }
+            Gizmos.color = _map[x, y] == 1 ? Color.black : Color.white;
+            var pos = new Vector3(xOffset + x, 0, zOffset + y);
+            Gizmos.DrawCube(pos, Vector3.one);
+        });
     }
 }
