@@ -325,8 +325,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd68271e9f7068949ad9e8bde3863d44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Width: 250
-  Height: 250
+  Width: 100
+  Height: 100
   InitialMapFillPercent: 50
   Seed: 
   UseRandomSeed: 0
