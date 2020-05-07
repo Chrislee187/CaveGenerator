@@ -13,4 +13,4 @@ Using [Marching Squares](https://en.wikipedia.org/wiki/Marching_squares#Basic_al
 
 ![alt text][samplev2]
 
-[samplev2]: https://github.com/Chrislee187/CaveGenerator/blob/master/DocImages/samplev1.JPG "Output after creating a mesh using Marching Squares to round out the edges"
+[samplev2]: https://github.com/Chrislee187/CaveGenerator/blob/master/DocImages/samplev2.JPG "Output after creating a mesh using Marching Squares to round out the edges"
