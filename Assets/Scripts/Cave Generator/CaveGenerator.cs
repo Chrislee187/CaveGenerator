@@ -1,5 +1,8 @@
-﻿using UnityEngine;
-
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 [ExecuteInEditMode]
 public class CaveGenerator : MonoBehaviour
@@ -34,18 +37,23 @@ public class CaveGenerator : MonoBehaviour
     [Range(0,25)]
     public int SmoothingIterations = 5;
 
+    public bool GenerateWallMesh = true;
+    public bool GenerateFloorPlanMesh = true;
+
 
     private int[,] _map;
     private string _lastSeed = "";
 
-    void Start()
+    private void Start()
     {
         GenerateCave();
     }
 
     [ContextMenu("Generate New Map")]
+    
     public void GenerateCave()
     {
+
         var floorPlanGenerator = new CaveFloorPlanGenerator(Width, Height);
 
         _map = UseRandomSeed
@@ -56,11 +64,30 @@ public class CaveGenerator : MonoBehaviour
         _lastSeed = Seed;
         
         var meshGenerator = GetComponent<MeshGenerator>();
-        meshGenerator.GenerateMesh(_map, 1f);
+        meshGenerator.GenerateMesh(_map, 1f, GenerateFloorPlanMesh, GenerateWallMesh);
+
     }
 
 #if UNITY_EDITOR
-    void OnValidate()
+    [ContextMenu("Map Generation Performance Test")]
+    public void PerfTest()
+    {
+        var sw = new Stopwatch();
+        var avgs = new List<long>();
+        for (var i = 0; i < 10; i++)
+        {
+            sw.Start();
+
+            GenerateCave();
+
+            sw.Stop();
+            avgs.Add(sw.ElapsedMilliseconds);
+            sw.Reset();
+        }
+        Debug.Log($"10 Generations took an average of {avgs.Average()}ms");
+    }
+
+    private void OnValidate()
     {
         if (GUI.changed)
         {

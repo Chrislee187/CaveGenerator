@@ -1,35 +1,35 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-public class MarchingSquaresMesh
+public class MarchingSquaresMeshData
 {
 
     public Vector3[] Vertices => _vertices.ToArray();
     public int[] Triangles => _triangles.ToArray();
 
-    private SquareGrid _squareGrid;
+    // TODO: Shouldn't really expose the inner list here
+    public readonly Dictionary<int, List<Triangle>> TriangleDictionary = new Dictionary<int, List<Triangle>>();
+
+    public readonly HashSet<int> CheckedVertices = new HashSet<int>();
 
     private readonly List<Vector3> _vertices = new List<Vector3>();
     private readonly List<int> _triangles = new List<int>();
 
-    public MarchingSquaresMesh(int[,] map, float squareSize)
+    public MarchingSquaresMeshData(int[,] map, float squareSize)
     {
-        _squareGrid = new SquareGrid(map, squareSize);
+        var squareGrid = new Grid(map, squareSize);
 
-        _vertices.Clear();
-        _triangles.Clear();
-
-        For.Xy(_squareGrid.Width, _squareGrid.Height, (x, y) =>
+        For.Xy(squareGrid.Width, squareGrid.Height, (x, y) =>
         {
-            TriangulateSquare(_squareGrid[x, y]);
+            TriangulateSquare(squareGrid[x, y]);
         });
     }
 
     private void TriangulateSquare(Square square)
     {
-        // Create mesh from the specified configuration.
+        // Create mesh from the specified contour configuration.
         // See <see href="https://en.wikipedia.org/wiki/Marching_squares#Basic_algorithm">"Look-up table contour lines"</see>
-        switch (square.Configuration)
+        switch (square.ContourConfiguration)
         {
             case 0:
                 break;
@@ -85,6 +85,10 @@ public class MarchingSquaresMesh
             // 4 point:
             case 15:
                 MeshFromPoints(square.TopLeft, square.TopRight, square.BottomRight, square.BottomLeft);
+                CheckedVertices.Add(square.TopLeft.VertexIndex);
+                CheckedVertices.Add(square.TopRight.VertexIndex);
+                CheckedVertices.Add(square.BottomRight.VertexIndex);
+                CheckedVertices.Add(square.BottomLeft.VertexIndex);
                 break;
         }
     }
@@ -128,16 +132,34 @@ public class MarchingSquaresMesh
         _triangles.Add(a.VertexIndex);
         _triangles.Add(b.VertexIndex);
         _triangles.Add(c.VertexIndex);
+
+        var triangle = new Triangle(a.VertexIndex, b.VertexIndex, c.VertexIndex);
+        AddTriangleToDictionary(triangle.VertexIndexA, triangle);
+        AddTriangleToDictionary(triangle.VertexIndexB, triangle);
+        AddTriangleToDictionary(triangle.VertexIndexC, triangle);
     }
 
-    private class SquareGrid
+    private void AddTriangleToDictionary(int vertexIndex, Triangle triangle)
+    {
+        if (TriangleDictionary.ContainsKey(vertexIndex))
+        {
+            TriangleDictionary[vertexIndex].Add(triangle);
+        }
+        else
+        {
+            TriangleDictionary.Add(vertexIndex, new List<Triangle> {triangle});
+        }
+        
+    }
+
+    private class Grid
     {
         private readonly Square[,] _squares;
 
         public readonly int Width;
         public readonly int Height;
 
-        public SquareGrid(int[,] map, float squareSize)
+        public Grid(int[,] map, float squareSize)
         {
             var nodeCountX = map.GetLength(0);
             var nodeCountY = map.GetLength(1);
@@ -198,15 +220,8 @@ public class MarchingSquaresMesh
         public readonly Node CenterBottom;
         public readonly Node CenterLeft;
 
-        public int Configuration;
+        public int ContourConfiguration { get; private set; }
 
-        private class NodeConfigurationValues
-        {
-            public const int BottomLeft = 1;
-            public const int BottomRight = 2;
-            public const int TopRight = 4;
-            public const int TopLeft = 8;
-        }
         public Square(ControlNode topLeft, ControlNode topRight, ControlNode bottomRight, ControlNode bottomLeft)
         {
             TopLeft = topLeft;
@@ -219,29 +234,34 @@ public class MarchingSquaresMesh
             CenterBottom = BottomLeft.Right;
             CenterLeft = BottomLeft.Above;
 
-            CalculateConfiguration();
+            CalculateContourConfiguration();
         }
 
-        private void CalculateConfiguration()
+        private void CalculateContourConfiguration()
         {
+            const int bottomLeftBit = 1;
+            const int bottomRightBit = 2;
+            const int topRightBit = 4;
+            const int topLeftBit = 8;
+
             if (TopLeft.Active)
             {
-                Configuration += NodeConfigurationValues.TopLeft;
+                ContourConfiguration += topLeftBit;
             }
 
             if (TopRight.Active)
             {
-                Configuration += NodeConfigurationValues.TopRight;
+                ContourConfiguration += topRightBit;
             }
 
             if (BottomRight.Active)
             {
-                Configuration += NodeConfigurationValues.BottomRight;
+                ContourConfiguration += bottomRightBit;
             }
 
             if (BottomLeft.Active)
             {
-                Configuration += NodeConfigurationValues.BottomLeft;
+                ContourConfiguration += bottomLeftBit;
             }
         }
     }
