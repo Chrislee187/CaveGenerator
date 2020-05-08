@@ -26,8 +26,7 @@ public class CaveGenerator : MonoBehaviour
     [Tooltip("Use a random seed each time the map is generated")]
     public bool UseRandomSeed;
 
-    [Tooltip("Size in squares of the border to place around the edge of the floor map. NB. Changing the border size will effectively generate a new random map " +
-             "for the same reasons as when the map Width & Height changes (see their ToolTips).")]
+    [Tooltip("Size in squares of the border to add around the edge of the floor map.")]
     [Min(0)]
     public int BorderSize = 1;
 
@@ -44,6 +43,7 @@ public class CaveGenerator : MonoBehaviour
         GenerateCave();
     }
 
+    [ContextMenu("Generate New Map")]
     public void GenerateCave()
     {
         var floorPlanGenerator = new CaveFloorPlanGenerator(Width, Height);

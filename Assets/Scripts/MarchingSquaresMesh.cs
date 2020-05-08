@@ -36,13 +36,13 @@ public class MarchingSquaresMesh
 
             // 1 points:
             case 1:
-                MeshFromPoints(square.CenterBottom, square.BottomLeft, square.CenterLeft);
+                MeshFromPoints(square.CenterLeft, square.CenterBottom, square.BottomLeft);
                 break;
             case 2:
-                MeshFromPoints(square.CenterRight, square.BottomRight, square.CenterBottom);
+                MeshFromPoints(square.BottomRight, square.CenterBottom, square.CenterRight);
                 break;
             case 4:
-                MeshFromPoints(square.CenterTop, square.TopRight, square.CenterRight);
+                MeshFromPoints(square.TopRight, square.CenterRight, square.CenterTop);
                 break;
             case 8:
                 MeshFromPoints(square.TopLeft, square.CenterTop, square.CenterLeft);

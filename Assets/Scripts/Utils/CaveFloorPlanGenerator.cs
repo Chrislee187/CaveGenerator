@@ -9,15 +9,15 @@ public class CaveFloorPlanGenerator
 
     public string Seed;
 
-    private readonly int _width;
-    private readonly int _height;
+    private readonly int _nonBorderedWidth;
+    private readonly int _nonBorderedHeight;
     private int _borderSize;
 
 
-    public CaveFloorPlanGenerator(int width, int height)
+    public CaveFloorPlanGenerator(int nonBorderedWidth, int nonBorderedHeight)
     {
-        _width = width;
-        _height = height;
+        _nonBorderedWidth = nonBorderedWidth;
+        _nonBorderedHeight = nonBorderedHeight;
     }
     
     public int[,] GenerateRandom(int randomFillPercent = 50, int borderSize = 1, int smoothingIterations = 5)
@@ -30,9 +30,9 @@ public class CaveFloorPlanGenerator
     {
         Seed = seed;
 
-        this._borderSize = borderSize;
+        _borderSize = borderSize;
 
-        var map = new int[_width, _height];
+        var map = new int[_nonBorderedWidth, _nonBorderedHeight];
 
         RandomiseMap(map, Seed, randomFillPercent);
 
@@ -43,38 +43,48 @@ public class CaveFloorPlanGenerator
                 ApplySmoothing(map);
             }
         }
-        return map;
+
+        return AddBorderToMap(borderSize, map);
 
     }
 
-    void RandomiseMap(int[,] map, string seed, int randomFillPercent)
+    private int[,] AddBorderToMap(int borderSize, int[,] map)
     {
-        var random = new Random(seed.GetHashCode());
-        bool IsBorder(int x, int y)
-        {
-            return x < _borderSize || x > _width - _borderSize - 1
-                                  || y < _borderSize || y > _height - _borderSize - 1;
-        }
+        if (_borderSize == 0) return map;
 
-        For.Xy(_width, _height, (x, y) =>
+        bool IsBorder(int x, int y) => x <= _borderSize || x >= _nonBorderedWidth + _borderSize || y <= _borderSize || y >= _nonBorderedHeight + _borderSize;
+
+        var borderedMap = new int[_nonBorderedWidth + _borderSize * 2, _nonBorderedHeight + _borderSize * 2];
+
+        For.Xy(borderedMap.GetLength(0), borderedMap.GetLength(1), (x, y) =>
         {
             if (IsBorder(x, y))
             {
-                map[x, y] = AWall;
+                borderedMap[x, y] = AWall;
             }
             else
             {
-                map[x, y] = random.Next(0, 100) < randomFillPercent
-                    ? AWall
-                    : NoWall;
+                borderedMap[x, y] = map[x - borderSize, y - borderSize];
             }
         });
+        return borderedMap;
     }
 
-
-    void ApplySmoothing(int[,] map)
+    private void RandomiseMap(int[,] map, string seed, int randomFillPercent)
     {
-        For.Xy(_width, _height, (x, y) =>
+        var random = new Random(seed.GetHashCode());
+
+        For.Xy(_nonBorderedWidth, _nonBorderedHeight, (x, y) =>
+        {
+            map[x, y] = random.Next(0, 100) < randomFillPercent
+                ? AWall
+                : NoWall;
+        });
+    }
+    
+    private void ApplySmoothing(int[,] map)
+    {
+        For.Xy(_nonBorderedWidth, _nonBorderedHeight, (x, y) =>
         {
             var neighbourWalls = NineNeighbourWallCount(x, y, map);
             if (neighbourWalls > 4)
@@ -95,8 +105,10 @@ public class CaveFloorPlanGenerator
     /// <param name="wallY"></param>
     /// <param name="map"></param>
     /// <returns></returns>
-    int NineNeighbourWallCount(int wallX, int wallY, int[,] map)
+    private int NineNeighbourWallCount(int wallX, int wallY, int[,] map)
     {
+        bool IsInGridBounds(int x, int y) => x >= 0 && x < _nonBorderedWidth && y >= 0 && y < _nonBorderedHeight;
+
         var wallCount = 0;
 
         for (var neighbourX = wallX - 1; neighbourX <= wallX + 1; neighbourX++)
@@ -112,7 +124,7 @@ public class CaveFloorPlanGenerator
                 }
                 else
                 {
-                    // Our borders are solid so out of bounds cells are walls
+                    // Treat out of bounds as walls
                     wallCount++;
                 }
             }
@@ -120,10 +132,5 @@ public class CaveFloorPlanGenerator
 
         return wallCount;
     }
-    private bool IsInGridBounds(int neighbourX, int neighbourY)
-    {
-        return neighbourX >= 0 && neighbourX < _width && neighbourY >= 0 && neighbourY < _height;
-    }
-
-
+    
 }

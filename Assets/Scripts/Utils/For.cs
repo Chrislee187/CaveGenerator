@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Security.Cryptography.X509Certificates;
-using System.Transactions;
-
 // ReSharper disable ConvertToNullCoalescingCompoundAssignment NOTE: Can't use compound assignment in this ver. of unity
 
 

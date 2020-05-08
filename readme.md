@@ -1,4 +1,4 @@
-﻿Simple procedure floor plan generator, initially based on [Sebastian Lague's youtube series](https://www.youtube.com/watch?v=v7yyZZjF1z4&list=PLFt_AvWsXl0eZgMK_DT5_biRkWXftAOf9]).
+﻿Simple procedure floor plan generator, based on [Sebastian Lague's youtube series](https://www.youtube.com/watch?v=v7yyZZjF1z4&list=PLFt_AvWsXl0eZgMK_DT5_biRkWXftAOf9]).
 
 # First Pass
 Basic floor plan generation from random number samples and some simple smoothing. Drawn using gizmos for testing rather than a Mesh or Gameobjects (mesh coming next).
