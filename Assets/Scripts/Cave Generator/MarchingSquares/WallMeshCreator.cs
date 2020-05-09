@@ -4,7 +4,7 @@ using UnityEngine;
 public class WallMeshCreator
 {
     private readonly MarchingSquaresMeshData _marchingSquaresMeshData;
-    private readonly List<List<int>> Outlines = new List<List<int>>();
+    private readonly List<List<int>> _outlines = new List<List<int>>();
     public WallMeshCreator(MarchingSquaresMeshData marchingSquaresMeshData)
     {
         _marchingSquaresMeshData = marchingSquaresMeshData;
@@ -23,7 +23,7 @@ public class WallMeshCreator
         const int bottomLeftOffset = 2;
         const int bottomRightOffset = 3;
 
-        foreach (var outline in Outlines)
+        foreach (var outline in _outlines)
         {
             for (var i = 0; i < outline.Count - 1; i++)
             {
@@ -65,12 +65,12 @@ public class WallMeshCreator
 
                     var newOutline = new List<int> { vertexIndex };
 
-                    Outlines.Add(newOutline);
+                    _outlines.Add(newOutline);
 
-                    FollowOutline(newOutlineVertex, Outlines.Count - 1);
+                    FollowOutline(newOutlineVertex, _outlines.Count - 1);
 
                     // Connect to starting vertex
-                    Outlines[Outlines.Count - 1].Add(vertexIndex);
+                    _outlines[_outlines.Count - 1].Add(vertexIndex);
                 }
             }
         }
@@ -80,7 +80,7 @@ public class WallMeshCreator
     {
         while (true)
         {
-            Outlines[outlineIndex].Add(vertexIndex);
+            _outlines[outlineIndex].Add(vertexIndex);
             _marchingSquaresMeshData.CheckedVertices.Add(vertexIndex);
 
             var nextVertexIndex = GetConnectedOutlineVertex(vertexIndex);

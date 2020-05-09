@@ -1,5 +1,5 @@
-﻿
-using System;
+﻿using System;
+using System.Collections.Generic;
 using Random = System.Random;
 
 public class CaveFloorPlanGenerator
@@ -13,6 +13,7 @@ public class CaveFloorPlanGenerator
     private readonly int _nonBorderedHeight;
     private int _borderSize;
 
+    private readonly bool _sealMap = true;
 
     public CaveFloorPlanGenerator(int nonBorderedWidth, int nonBorderedHeight)
     {
@@ -20,13 +21,16 @@ public class CaveFloorPlanGenerator
         _nonBorderedHeight = nonBorderedHeight;
     }
     
-    public int[,] GenerateRandom(int randomFillPercent = 50, int borderSize = 1, int smoothingIterations = 5)
+    public int[,] Generate(int randomFillPercent = 50, int borderSize = 1, int smoothingIterations = 5, bool processRegions = true, int smallWallThresholdSize = 50, int smallRoomThresholdSize = 50)
         => Generate(Guid.NewGuid().ToString(),
             randomFillPercent,
             borderSize, 
-            smoothingIterations);
+            smoothingIterations,
+            processRegions,
+            smallWallThresholdSize,
+            smallRoomThresholdSize);
 
-    public int[,] Generate(string seed, int randomFillPercent,int borderSize = 1, int smoothingIterations = 5)
+    public int[,] Generate(string seed, int randomFillPercent,int borderSize = 1, int smoothingIterations = 5, bool processRegions = true, int smallWallThresholdSize = 50, int smallRoomThresholdSize = 50)
     {
         Seed = seed;
 
@@ -44,8 +48,14 @@ public class CaveFloorPlanGenerator
             }
         }
 
-        return AddBorderToMap(borderSize, map);
+        if (processRegions)
+        {
+            var regions = new Regions(map);
+            regions.RemoveSmallWalls(smallWallThresholdSize);
+            regions.RemoveSmallRooms(smallRoomThresholdSize);
+        }
 
+        return AddBorderToMap(borderSize, map);
     }
 
     private int[,] AddBorderToMap(int borderSize, int[,] map)
@@ -73,12 +83,18 @@ public class CaveFloorPlanGenerator
     private void RandomiseMap(int[,] map, string seed, int randomFillPercent)
     {
         var random = new Random(seed.GetHashCode());
-
         For.Xy(_nonBorderedWidth, _nonBorderedHeight, (x, y) =>
         {
-            map[x, y] = random.Next(0, 100) < randomFillPercent
-                ? AWall
-                : NoWall;
+            if (_sealMap && x == 0 || x == _nonBorderedWidth - 1 || y == 0 || y == _nonBorderedHeight - 1)
+            {
+                map[x, y] = AWall;
+            }
+            else
+            {
+                map[x, y] = random.Next(0, 100) < randomFillPercent
+                    ? AWall
+                    : NoWall;
+            }
         });
     }
     
@@ -107,8 +123,6 @@ public class CaveFloorPlanGenerator
     /// <returns></returns>
     private int NineNeighbourWallCount(int wallX, int wallY, int[,] map)
     {
-        bool IsInGridBounds(int x, int y) => x >= 0 && x < _nonBorderedWidth && y >= 0 && y < _nonBorderedHeight;
-
         var wallCount = 0;
 
         for (var neighbourX = wallX - 1; neighbourX <= wallX + 1; neighbourX++)
@@ -132,5 +146,117 @@ public class CaveFloorPlanGenerator
 
         return wallCount;
     }
-    
+
+    private bool IsInGridBounds(int x, int y) => x >= 0 && x < _nonBorderedWidth && y >= 0 && y < _nonBorderedHeight;
+
+    private class Regions : List<Regions.Region>
+    {
+        private readonly int[,] _map;
+        private readonly int _mapWidth;
+        private readonly int _mapHeight;
+
+        public Regions(int[,] map)
+        {
+            _map = map;
+            _mapWidth = _map.GetUpperBound(0);
+            _mapHeight = _map.GetUpperBound(1);
+        }
+        private bool IsInGridBounds(int x, int y) => x >= 0 && x < _mapWidth && y >= 0 && y < _mapHeight;
+        public void RemoveSmallWalls(int smallWallThresholdSize) => RemoveRegions(_map, AWall, NoWall, smallWallThresholdSize);
+        public void RemoveSmallRooms(int smallRoomThresholdSize) => RemoveRegions(_map, NoWall, AWall, smallRoomThresholdSize);
+        
+        private IReadOnlyList<Region> GetRegions(int[,] map, int tileType)
+        {
+            var regions = new List<Region>();
+            var checkedTiles = new bool[_mapWidth, _mapHeight];
+
+            for (var x = 0; x < _mapWidth; x++)
+            {
+                for (var y = 0; y < _mapHeight; y++)
+                {
+                    if (!checkedTiles[x, y] && map[x, y] == tileType)
+                    {
+                        var newRegion = GetRegionTiles(x, y, map);
+                        regions.Add(newRegion);
+
+                        foreach (var tile in newRegion)
+                        {
+                            checkedTiles[tile.TileX, tile.TileY] = true;
+                        }
+                    }
+                }
+
+            }
+
+            return regions;
+        }
+
+        private Region GetRegionTiles(int startX, int startY, int[,] map)
+        {
+
+            var tiles = new Region();
+            var checkedTiles = new bool[_mapWidth, _mapHeight];
+            var tileType = map[startX, startY];
+
+            var queue = new Queue<Coord>();
+
+            queue.Enqueue(new Coord(startX, startY));
+            checkedTiles[startX, startY] = true;
+
+            while (queue.Count > 0)
+            {
+                var tile = queue.Dequeue();
+                tiles.Add(tile);
+
+                for (var x = tile.TileX - 1; x <= tile.TileX + 1; x++)
+                {
+                    for (var y = tile.TileY - 1; y <= tile.TileY + 1; y++)
+                    {
+                        if (IsInGridBounds(x, y) && (x == tile.TileX || y == tile.TileY))
+                        {
+                            if (!checkedTiles[x, y] && map[x, y] == tileType)
+                            {
+                                checkedTiles[x, y] = true;
+                                queue.Enqueue(new Coord(x, y));
+                            }
+                        }
+                    }
+                }
+            }
+
+            return tiles;
+        }
+        
+        private void RemoveRegions(int[,] map, int tileType, int replacementTileType, int threshold)
+        {
+            var wallRegions = GetRegions(map, tileType);
+
+            foreach (var wallRegion in wallRegions)
+            {
+                if (wallRegion.Count < threshold)
+                {
+                    foreach (var tile in wallRegion)
+                    {
+                        map[tile.TileX, tile.TileY] = replacementTileType;
+                    }
+                }
+            }
+        }
+
+        internal class Region : List<Coord>
+        {
+
+        }
+        internal readonly struct Coord
+        {
+            public readonly int TileX;
+            public readonly int TileY;
+
+            public Coord(int tileX, int tileY)
+            {
+                TileX = tileX;
+                TileY = tileY;
+            }
+        }
+    }
 }

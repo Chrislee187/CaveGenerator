@@ -7,6 +7,7 @@ using Debug = UnityEngine.Debug;
 [ExecuteInEditMode]
 public class CaveGenerator : MonoBehaviour
 {
+    [Header("Map size settings")]
     [Tooltip("Changing the map size will effectively generate a new random map, even when using " +
              "the same seed. The seed is honoured and the same sequence of random numbers will be generated but they are now in different places " +
              "on the newly sized map")]
@@ -17,8 +18,9 @@ public class CaveGenerator : MonoBehaviour
              "the same seed. The seed is honoured and the same sequence of random numbers will be generated but they are now in different places " +
              "on the newly sized map")]
     [Min(1)]
-    public int Height = 64;
+    public int Height = 128;
 
+    [Header("Randomisation settings")]
     [Tooltip("When the random number (between 0-100) in floor plan creation is LESS THAN this value a wall will be placed, otherwise the cell is empty.")]
     [Range(0 ,100)]
     public int InitialMapFillPercent = 50;
@@ -29,7 +31,9 @@ public class CaveGenerator : MonoBehaviour
     [Tooltip("Use a random seed each time the map is generated")]
     public bool UseRandomSeed;
 
-    [Tooltip("Size in squares of the border to add around the edge of the floor map.")]
+    [Header("Smoothing and Border settings")]
+    [Tooltip("Size in squares of the border to add around the edge of the floor map. NB. This is added to the specified width and height of the map and is in addition to the single square wall that " +
+             "is automatically inserted around the inner border of the map to ensure small wall/room thresholds work in correctly around the edges of the map.")]
     [Min(0)]
     public int BorderSize = 1;
 
@@ -37,34 +41,51 @@ public class CaveGenerator : MonoBehaviour
     [Range(0,25)]
     public int SmoothingIterations = 5;
 
-    public bool GenerateWallMesh = true;
+    [Header("Mesh Settings")]
+    [Tooltip("Generate the inverse floor plan mesh (inverse because we are generating the floor plan by generating the walls, floor is the areas NOT covered by walls")]
     public bool GenerateFloorPlanMesh = true;
+    [Tooltip("Generate a vertical mesh for the walls, to use the cave in 3D")]
+    public bool GenerateWallMesh = true;
+    
+    
+    [Header("Region Settings")]
+    [Tooltip("Use to remove small wall 'islands' and small rooms")]
+    public bool ProcessRegions = true;
 
+    [Min(0)]
+    [Tooltip("When processing regions, remove walls with less than this number of nodes. This removes any small 'islands' in the middle or larger open spaces")]
+    public int SmallWallThresholdSize = 25;
 
-    private int[,] _map;
+    [Min(0)]
+    [Tooltip("When processing regions, remove and wall outlines with less than this number of nodes. This removes any small rooms.")]
+    public int SmallRoomThresholdSize = 25;
+
+    
     private string _lastSeed = "";
 
     private void Start()
     {
+#if UNITY_EDITOR
         GenerateCave();
+#endif
     }
 
-    [ContextMenu("Generate New Map")]
+    [ContextMenu("Generate New Cave")]
     
     public void GenerateCave()
     {
 
         var floorPlanGenerator = new CaveFloorPlanGenerator(Width, Height);
 
-        _map = UseRandomSeed
-            ? floorPlanGenerator.GenerateRandom(InitialMapFillPercent, BorderSize, SmoothingIterations)
-            : floorPlanGenerator.Generate(Seed, InitialMapFillPercent, BorderSize, SmoothingIterations);
+        var map = UseRandomSeed
+            ? floorPlanGenerator.Generate(InitialMapFillPercent, BorderSize, SmoothingIterations, ProcessRegions, SmallWallThresholdSize, SmallRoomThresholdSize)
+            : floorPlanGenerator.Generate(Seed, InitialMapFillPercent, BorderSize, SmoothingIterations, ProcessRegions, SmallWallThresholdSize, SmallRoomThresholdSize);
 
         Seed = floorPlanGenerator.Seed;
         _lastSeed = Seed;
         
         var meshGenerator = GetComponent<MeshGenerator>();
-        meshGenerator.GenerateMesh(_map, 1f, GenerateFloorPlanMesh, GenerateWallMesh);
+        meshGenerator.GenerateMesh(map, 1f, GenerateFloorPlanMesh, GenerateWallMesh);
 
     }
 

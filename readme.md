@@ -24,3 +24,19 @@ Create a wall mesh for the floor plan from
 ![alt text][samplev3]
 
 [samplev3]: https://github.com/Chrislee187/CaveGenerator/blob/master/DocImages/samplev3.JPG "Output after creating adding an optional wall mesh"
+
+# Remove small rooms and wall "islands"
+
+Remove rooms and wall "islands" (a sealed outline of walls inside a room)  whose size fall below a threshold.
+
+## Before
+
+![alt text][samplev4a]
+
+[samplev4a]: https://github.com/Chrislee187/CaveGenerator/blob/master/DocImages/samplev4a.JPG "Output before removing"
+
+## After
+
+![alt text][samplev4b]
+
+[samplev4b]: https://github.com/Chrislee187/CaveGenerator/blob/master/DocImages/samplev4b.JPG "Output after removing"
