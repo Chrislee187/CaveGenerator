@@ -1,6 +1,11 @@
 ﻿using UnityEngine;
 
-public class FloorPlanMeshCreator
+public interface IMeshCreator
+{
+    Mesh Create();
+}
+
+public class FloorPlanMeshCreator : IMeshCreator
 {
     private readonly MarchingSquaresMeshData _marchingSquaresMeshData;
 

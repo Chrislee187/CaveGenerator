@@ -5,8 +5,9 @@ using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 [ExecuteInEditMode]
-public class CaveGenerator : MonoBehaviour
+public class CaveBuilder : MonoBehaviour
 {
+    #region Settings
     [Header("Map size settings")]
     [Tooltip("Changing the map size will effectively generate a new random map, even when using " +
              "the same seed. The seed is honoured and the same sequence of random numbers will be generated but they are now in different places " +
@@ -59,10 +60,12 @@ public class CaveGenerator : MonoBehaviour
     [Min(0)]
     [Tooltip("When processing regions, remove and wall outlines with less than this number of nodes. This removes any small rooms.")]
     public int SmallRoomThresholdSize = 25;
-
+    #endregion
     
     private string _lastSeed = "";
 
+    private GameObject _cave;
+    private GameObject _walls;
     private void Start()
     {
 #if UNITY_EDITOR
@@ -71,7 +74,6 @@ public class CaveGenerator : MonoBehaviour
     }
 
     [ContextMenu("Generate New Cave")]
-    
     public void GenerateCave()
     {
 
@@ -83,12 +85,71 @@ public class CaveGenerator : MonoBehaviour
 
         Seed = floorPlanGenerator.Seed;
         _lastSeed = Seed;
-        
-        var meshGenerator = GetComponent<MeshGenerator>();
-        meshGenerator.GenerateMesh(map, 1f, GenerateFloorPlanMesh, GenerateWallMesh);
 
+        GenerateMeshes(map, 1f);
+    }
+    
+    private GameObject BuildContainerObject(string containerName, Color defaultMeshColour)
+    {
+        var c = defaultMeshColour;
+        var o = CreateMeshContainer(containerName, c);
+        o.AddComponent<MeshFilter>();
+        return o;
     }
 
+    private void GenerateMeshes(int[,] map, float squareSize)
+    {
+        var marchingSquares = new MarchingSquaresMeshData(map, squareSize);
+
+        if (_cave == null)
+        {
+            var c = new Color(103 / 255f, 79 / 255f, 79 / 255f);
+            _cave = BuildContainerObject("Cave", c);
+        }
+
+        var caveFilter = _cave.GetComponent<MeshFilter>();
+        if (GenerateFloorPlanMesh)
+        {
+            caveFilter.sharedMesh = new FloorPlanMeshCreator(marchingSquares).Create();
+        }
+        caveFilter.gameObject.SetActive(GenerateFloorPlanMesh);
+
+
+        if (_walls == null)
+        {
+            var c = new Color(103 / 255f, 0, 0);
+            _walls = BuildContainerObject("Walls", c);
+        }
+
+        var wallFilter = _walls.GetComponent<MeshFilter>();
+        if (GenerateWallMesh)
+        {
+            wallFilter.mesh = new WallMeshCreator(marchingSquares).Create();
+        }
+        wallFilter.gameObject.SetActive(GenerateWallMesh);
+    }
+
+    private GameObject CreateMeshContainer(string name, Color color)
+    {
+        GameObject container;
+        container = new GameObject(name);
+        container.transform.parent = transform;
+
+        var mr = container.AddComponent<MeshRenderer>();
+
+        var m = CreateSimpleMaterial(color);
+        mr.materials = new Material[1] {m};
+
+        return container;
+    }
+
+    private static Material CreateSimpleMaterial(Color color)
+    {
+        var m = new Material(Shader.Find("Standard"));
+        m.name = "Cave";
+        m.color = color;
+        return m;
+    }
 #if UNITY_EDITOR
     [ContextMenu("Map Generation Performance Test")]
     public void PerfTest()
