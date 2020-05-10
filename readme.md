@@ -2,6 +2,8 @@
 
 The following images show the gradual build up and refinement of the cave as more functionality is added to the generator.
 
+Please note that this images have been generated as I go along and therefore have ended up using different seeds and settings in each example image.
+
 # Basic floorplan generation
 Basic floor plan generation from random number samples and some simple smoothing. Drawn using gizmos for testing rather than a Mesh or Gameobjects (mesh coming next).
 
@@ -40,3 +42,6 @@ Remove rooms and wall "islands" (a sealed outline of walls inside a room)  whose
 ![alt text][samplev4b]
 
 [samplev4b]: https://github.com/Chrislee187/CaveGenerator/blob/master/DocImages/samplev4b.JPG "Output after removing"
+
+
+
