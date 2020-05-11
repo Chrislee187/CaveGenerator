@@ -5,7 +5,7 @@ The following images show the gradual build up and refinement of the cave as mor
 Please note that this images have been generated as I go along and therefore have ended up using different seeds and settings in each example image.
 
 # Basic floorplan generation
-Basic floor plan generation from random number samples and some simple smoothing. Drawn using gizmos for testing rather than a Mesh or Gameobjects (mesh coming next).
+Basic floor plan generation from random number samples and some simple smoothing. Drawn using gizmos.
 
 ![alt text][samplev1]
 

@@ -46,7 +46,33 @@ public static class For
             }
         }
     }
+    public static void XyLTE(
+        int maxX, int maxY,
+        Action<int, int> innerAction = null,
+        Action<int> outerAction = null,
+        int minX = 0, int minY = 0,
+        int stepX = 1, int stepY = 1)
+        => XyLTE(minX, maxX, stepX, minY, maxY, stepY, innerAction, outerAction);
+    public static void XyLTE(
+        int minX, int maxX, int stepX,
+        int minY, int maxY, int stepY,
+        Action<int, int> innerAction = null,
+        Action<int> outerAction = null
+    )
+    {
+        innerAction = innerAction ?? InnerNop;
+        outerAction = outerAction ?? OuterNop;
 
+
+        for (var y = minY; y <= maxY; y += stepY)
+        {
+            outerAction(y);
+            for (var x = minX; x <= maxX; x += stepX)
+            {
+                innerAction(x, y);
+            }
+        }
+    }
     /// <summary>
     /// Helper to avoid ugly nested if's
     /// </summary>
