@@ -43,5 +43,10 @@ Remove rooms and wall "islands" (a sealed outline of walls inside a room)  whose
 
 [samplev4b]: https://github.com/Chrislee187/CaveGenerator/blob/master/DocImages/samplev4b.JPG "Output after removing"
 
+# Ensure all rooms can be reached
 
+
+![alt text][samplev5]
+
+[samplev5]: https://github.com/Chrislee187/CaveGenerator/blob/master/DocImages/samplev5.JPG "Passways added to connect rooms"
 
