@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 using Random = System.Random;
 
 public class CaveFloorPlanGenerator
@@ -229,20 +231,93 @@ public class CaveFloorPlanGenerator
         
         private void RemoveRegions(int[,] map, int tileType, int replacementTileType, int threshold)
         {
-            var wallRegions = GetRegions(map, tileType);
-
-            foreach (var wallRegion in wallRegions)
+            var regions = GetRegions(map, tileType);
+            List<Room> remainingRooms = new List<Room>();
+            foreach (var region in regions)
             {
-                if (wallRegion.Count < threshold)
+                if (region.Count < threshold)
                 {
-                    foreach (var tile in wallRegion)
+                    foreach (var tile in region)
                     {
                         map[tile.TileX, tile.TileY] = replacementTileType;
                     }
                 }
+                else
+                {
+                    if (tileType == NoWall)
+                    {
+                        remainingRooms.Add(new Room(region, map));
+                    }
+                }
+            }
+
+            if (tileType == NoWall)
+            {
+                ConnectClosestRooms(remainingRooms);
             }
         }
 
+        void ConnectClosestRooms(List<Room> allRooms)
+        {
+            var closest = 0;
+            Coord closestTileA = new Coord();
+            Coord closestTileB = new Coord();
+            Room closestRoomA = new Room();
+            Room closestRoomB = new Room();
+            var possibleConnectionFound = false;
+
+            foreach (var roomA in allRooms)
+            {
+                possibleConnectionFound = false;
+                foreach (var roomB in allRooms.Where(roomB => !roomA.Equals(roomB)))
+                {
+                    if (roomA.IsConnected(roomB))
+                    {
+                        possibleConnectionFound = false;
+                        break;
+                    }
+
+                    foreach (var tileA in roomA.EdgeTiles)
+                    {
+                        foreach (var tileB in roomB.EdgeTiles)
+                        {
+                            var distanceBetweenRooms = (int) (Mathf.Pow(tileA.TileX - tileB.TileX, 2)
+                                                              + Mathf.Pow(tileA.TileY - tileB.TileY, 2));
+
+                            if (distanceBetweenRooms < closest || !possibleConnectionFound)
+                            {
+                                closest = distanceBetweenRooms;
+                                possibleConnectionFound = true;
+                                closestTileA = tileA;
+                                closestTileB = tileB;
+                                closestRoomA = roomA;
+                                closestRoomB = roomB;
+
+                            }
+                        }
+                    }
+                }
+
+                if (possibleConnectionFound)
+                {
+                    CreatePassage(closestRoomA, closestRoomB, closestTileA, closestTileB);
+                }
+            }
+
+        }
+
+        void CreatePassage(Room roomA, Room roomB, Coord tileA, Coord tileB)
+        {
+            Room.ConnectRooms(roomA, roomB);
+
+            Debug.DrawLine(CoordToWorldPoint(tileA), CoordToWorldPoint(tileB), Color.green, 5);
+
+        }
+
+        Vector3 CoordToWorldPoint(Coord tile)
+        {
+            return new Vector3(-_mapWidth / 2 + .5f + tile.TileX, 2, -_mapHeight / 2 + .5f + tile.TileY);
+        }
         internal class Region : List<Coord>
         {
 
@@ -256,6 +331,60 @@ public class CaveFloorPlanGenerator
             {
                 TileX = tileX;
                 TileY = tileY;
+            }
+        }
+
+        private class Room
+        {
+            public List<Coord> Tiles;
+            public List<Coord> EdgeTiles;
+            public List<Room> ConnectedRooms;
+            public int RoomSize;
+
+            public Room()
+            {
+                
+            }
+
+            public Room(List<Coord> roomTiles,int [,] map )
+            {
+                Tiles = roomTiles;
+                RoomSize = Tiles.Count;
+                ConnectedRooms = new List<Room>();
+                    
+                EdgeTiles = new List<Coord>();
+
+                foreach (var tile in Tiles)
+                {
+                    for (int x = tile.TileX-1; x <= tile.TileX+1; x++)
+                    {
+                        for (int y = tile.TileY-1; y <= tile.TileY + 1; y++)
+                        {
+                            if (x == tile.TileX || y == tile.TileY) // ignore diaganoals
+                            {
+                                if (map[x, y] == AWall)
+                                {
+                                    EdgeTiles.Add(tile);
+                                }
+                            }
+                        }
+                    }
+                }
+
+
+
+
+            }
+
+            public static void ConnectRooms(Room a, Room b)
+            {
+                a.ConnectedRooms.Add(b);
+                b.ConnectedRooms.Add(a);
+            }
+
+            public bool IsConnected(Room otherRoom)
+            {
+                return ConnectedRooms.Contains(otherRoom);
             }
         }
     }
